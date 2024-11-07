@@ -8,12 +8,17 @@ var cors = require("cors");
 
 app.use(cors());
 
+app.use(express.urlencoded({ extended: true }));
+// This is required to handle urlencoded data
+app.use(express.json());
+// This to handle json data coming from requests mainly post
+
 app.get("/projects", (req, res) => {
     res.send("");
 });
 
 var users = {
-    tj: { name: "admin" },
+    admin: { name: "admin" },
 };
 
 // when you create a user, generate a salt
@@ -22,8 +27,8 @@ var users = {
 hash({ password: "1234" }, function (err, pass, salt, hash) {
     if (err) throw err;
     // store the salt & hash in the "db"
-    users.tj.salt = salt;
-    users.tj.hash = hash;
+    users.admin.salt = salt;
+    users.admin.hash = hash;
 });
 
 function authenticate(name, pass, fn) {
