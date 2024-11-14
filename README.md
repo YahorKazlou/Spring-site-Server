@@ -1,0 +1,1 @@
+node app.js -- command to start the server
