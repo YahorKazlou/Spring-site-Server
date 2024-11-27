@@ -1,16 +1,24 @@
 {
-  "name": "works5",
-  "version": "1.0.0",
-  "main": "\u001b[D\u001b[D\u001b[D\u001bapp\u001b[C\u001b[D\u001b[3~\u001b[C\u001b[C\u001b[C\u001b[C\u001b[C\u001b[C",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.21.1",
-    "pbkdf2-password": "^1.2.1"
-  }
+    "name": "works5",
+    "version": "1.0.0",
+    "main": "\u001b[D\u001b[D\u001b[D\u001bapp\u001b[C\u001b[D\u001b[3~\u001b[C\u001b[C\u001b[C\u001b[C\u001b[C\u001b[C",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "prettier-format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,mdx,css,yaml}\"",
+        "eslint:github-action": "eslint src/"
+    },
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "eslint": "^9.14.0",
+        "express": "^4.21.1",
+        "pbkdf2-password": "^1.2.1"
+    },
+    "devDependencies": {
+        "eslint-config-prettier": "^9.1.0",
+        "jest": "^29.7.0",
+        "prettier": "3.3.3"
+    }
 }
