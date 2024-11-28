@@ -25,6 +25,17 @@ const getUserByUsername = (username, callback) => {
     );
 };
 
+const setUser = (
+    { username, password, firstName, lastName, age, salt },
+    callback
+) => {
+    return query(
+        "INSERT INTO users(username, password, firstname, lastname, age , salt) VALUES ($1, $2, $3, $4, $5, $6)",
+        [username, password, firstName, lastName, age, salt],
+        callback
+    );
+};
+
 const getProjects = (callback) => {
     return query("SELECT * FROM project", null, callback);
 };
@@ -43,4 +54,5 @@ module.exports = {
     getUserByUsername,
     getProjects,
     getProjectBySearchTerm,
+    setUser,
 };

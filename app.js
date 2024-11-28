@@ -22,20 +22,11 @@ app.use(express.static("public"));
 // when you create a user, generate a salt
 // and hash the password ('foobar' is the pass here)
 
-// TODO use in signup
-// hash({ password: "1234" }, function (err, pass, salt, hash) {
-//     if (err) throw err;
-//     // store the salt & hash in the "db"
-//     users.admin.salt = salt;
-//     users.admin.hash = hash;
-
-// });
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
 
 function authenticate(name, pass, fn) {
-    if (!module.parent) console.log("authenticating %s:%s", name, pass);
     // query the db for the given username
     db.getUserByUsername(name)
         .then((res) => {
@@ -59,6 +50,36 @@ function authenticate(name, pass, fn) {
 app.post("/login", function (req, res, next) {
     if (!req.body) return res.sendStatus(400);
     authenticate(req.body.login, req.body.password, function (err, user) {
+        if (err) return next(err);
+        if (user) {
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(403);
+        }
+    });
+});
+
+function register(userData, fn) {
+    const { username, password, repeatPassword, firstName, lastName, age } =
+        userData;
+    // TODO validation
+
+    hash({ password }, function (err, pass, salt, hash) {
+        if (err) return fn(err);
+
+        db.setUser({ ...userData, password: hash, salt })
+            .then(() => {
+                return fn(null, user);
+            })
+            .catch((error) => {
+                return fn(error);
+            });
+    });
+}
+
+app.post("/singup", function (req, res, next) {
+    if (!req.body) return res.sendStatus(400);
+    register(req.body, function (err, user) {
         if (err) return next(err);
         if (user) {
             res.sendStatus(200);
