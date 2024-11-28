@@ -14,6 +14,9 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 // This is required to handle urlencoded data
 app.use(express.json());
+
+app.use(express.static("public"));
+
 // This to handle json data coming from requests mainly post
 
 // when you create a user, generate a salt
@@ -27,6 +30,9 @@ app.use(express.json());
 //     users.admin.hash = hash;
 
 // });
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`);
+});
 
 function authenticate(name, pass, fn) {
     if (!module.parent) console.log("authenticating %s:%s", name, pass);
@@ -62,64 +68,21 @@ app.post("/login", function (req, res, next) {
     });
 });
 
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-});
-
-const defaultProjects = [
-    {
-        name: "Spring Boot",
-        text: "Takes an opinionated view of building Spring applications and gets you up and running as quickly as possible.",
-        imgUrl: "http://localhost:3001/spring-boot.svg",
-        link: "",
-    },
-    {
-        name: "Spring Framework",
-        text: "Provides core support for dependency injection, transaction management, web apps, data access, messaging, and more.",
-        imgUrl: "http://localhost:3001/spring-framework.svg",
-        link: "",
-    },
-    {
-        name: "Spring Data",
-        text: "Provides a consistent approach to data access – relational, non-relational, map-reduce, and beyond.",
-        imgUrl: "http://localhost:3001/spring-data.svg",
-        link: "",
-    },
-    {
-        name: "Spring Cloud",
-        text: "Provides a set of tools for common patterns in distributed systems. Useful for building and deploying microservices.",
-        imgUrl: "http://localhost:3001/spring-cloud.svg",
-        link: "",
-    },
-    {
-        name: "Spring Cloud Data Flow",
-        text: "Provides an orchestration service for composable data microservice applications on modern runtimes.",
-        imgUrl: "http://localhost:3001/spring-data-flow.svg",
-        link: "",
-    },
-    {
-        name: "Spring Scurity",
-        text: "Protects your application with comprehensive and extensible authentication and authorization support.",
-        imgUrl: "http://localhost:3001/spring-security.svg",
-        link: "",
-    },
-];
-
-app.use(express.static("public"));
-
-const filterProjects = (searchTerm = "") => {
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const filteredProjects = defaultProjects.filter(
-        (project) =>
-            project.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-            project.text.toLowerCase().includes(lowerCaseSearchTerm)
-    );
-
-    return filteredProjects;
-};
-
 app.get("/projects", (req, res) => {
     const searchTerm = req.query.search;
-
-    res.json({ data: filterProjects(searchTerm) });
+    if (searchTerm) {
+        db.getProjectBySearchTerm(searchTerm)
+            .then((dbres) => {
+                const projectsArray = dbres.rows;
+                res.json({ data: projectsArray });
+            })
+            .catch((error) => console.log(error));
+    } else {
+        db.getProjects()
+            .then((dbres) => {
+                const projectsArray = dbres.rows;
+                res.json({ data: projectsArray });
+            })
+            .catch((error) => console.log(error));
+    }
 });

@@ -1,4 +1,3 @@
-
 const pg = require("pg");
 
 const { Client } = pg;
@@ -19,11 +18,29 @@ const query = (text, params, callback) => {
 };
 
 const getUserByUsername = (username, callback) => {
-    return query('SELECT * FROM users WHERE username = $1', [username], callback)
-}
+    return query(
+        "SELECT * FROM users WHERE username = $1",
+        [username],
+        callback
+    );
+};
+
+const getProjects = (callback) => {
+    return query("SELECT * FROM project", null, callback);
+};
+
+const getProjectBySearchTerm = (searchTerm, callback) => {
+    return query(
+        "SELECT * FROM project WHERE LOWER(name) LIKE LOWER($1) OR LOWER(text) LIKE LOWER ($1)",
+        [`%${searchTerm}%`],
+        callback
+    );
+};
 
 module.exports = {
     init,
     query,
     getUserByUsername,
+    getProjects,
+    getProjectBySearchTerm,
 };
