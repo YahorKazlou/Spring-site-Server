@@ -63,6 +63,42 @@ function register(userData, fn) {
     const { username, password, repeatPassword, firstName, lastName, age } =
         userData;
     // TODO validation
+    if (!username || username.length < 3)
+        return fn({
+            field: "username",
+            error: "Username must contain 3 symbols or more",
+            status: 400,
+        });
+    if (!password || password.length < 4 || /[^a-zA-Z0-9]/g.test(password))
+        return fn({
+            field: "password",
+            error: "Password must contain at least 1 number and 1 letter and be at least 4 symbols or more.",
+            status: 400,
+        });
+    if (!repeatPassword || password !== repeatPassword)
+        return fn({
+            field: "repeatPassword",
+            error: "Repeat password section validation (passwords should be the same)",
+            status: 400,
+        });
+    if (!firstName || firstName.length < 3)
+        return fn({
+            field: "firstName",
+            error: "First name must contain 3 symbols or more.",
+            status: 400,
+        });
+    if (!lastName || lastName.length < 3)
+        return fn({
+            field: "lastName",
+            error: "Last name must contain 3 symbols or more.",
+            status: 400,
+        });
+    if (!age || typeof age !== "number" || age === 0)
+        return fn({
+            field: "age",
+            error: "Age must be a number and can't be zero",
+            status: 400,
+        });
 
     hash({ password }, function (err, pass, salt, hash) {
         if (err) return fn(err);
@@ -81,9 +117,11 @@ function register(userData, fn) {
 app.post("/signup", function (req, res, next) {
     if (!req.body) return res.sendStatus(400);
     register(req.body, function (err, user) {
-        if (err) return next(err);
+        if (err) {
+            console.log(err);
+            res.status(400).send(err);
+        }
         if (user) {
-            // res.sendStatus(200);
             res.json({ data: user });
         } else {
             res.sendStatus(403);
