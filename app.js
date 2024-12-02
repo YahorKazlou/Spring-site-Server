@@ -69,7 +69,8 @@ function register(userData, fn) {
 
         db.setUser({ ...userData, password: hash, salt })
             .then(() => {
-                return fn(null, user);
+                const { password, ...visibleUserData } = userData;
+                return fn(null, visibleUserData);
             })
             .catch((error) => {
                 return fn(error);
@@ -77,12 +78,13 @@ function register(userData, fn) {
     });
 }
 
-app.post("/singup", function (req, res, next) {
+app.post("/signup", function (req, res, next) {
     if (!req.body) return res.sendStatus(400);
     register(req.body, function (err, user) {
         if (err) return next(err);
         if (user) {
-            res.sendStatus(200);
+            // res.sendStatus(200);
+            res.json({ data: user });
         } else {
             res.sendStatus(403);
         }
@@ -97,13 +99,13 @@ app.get("/projects", (req, res) => {
                 const projectsArray = dbres.rows;
                 res.json({ data: projectsArray });
             })
-            .catch((error) => console.log(error));
+            .catch((error) => console.error(error));
     } else {
         db.getProjects()
             .then((dbres) => {
                 const projectsArray = dbres.rows;
                 res.json({ data: projectsArray });
             })
-            .catch((error) => console.log(error));
+            .catch((error) => console.error(error));
     }
 });
