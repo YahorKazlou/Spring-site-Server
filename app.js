@@ -53,6 +53,17 @@ function authenticate(name, pass, fn) {
         .catch((error) => console.log(error));
 }
 
+const generateTokens = (tokenData) => {
+    const refreshToken = jwt.sign(tokenData, "Secretkey123", {
+        expiresIn: "60d",
+    });
+    const authToken = jwt.sign(tokenData, "Secretkey123", {
+        expiresIn: 5 * 60,
+    });
+
+    return { refreshToken, authToken };
+};
+
 app.post("/login", function (req, res, next) {
     if (!req.body) return res.sendStatus(400);
     authenticate(req.body.login, req.body.password, function (err, user) {
@@ -62,13 +73,7 @@ app.post("/login", function (req, res, next) {
                 id: user.id,
                 username: user.username,
             };
-            const refreshToken = jwt.sign(tokenData, "Secretkey123", {
-                expiresIn: "60d",
-            });
-            const authToken = jwt.sign(tokenData, "Secretkey123", {
-                expiresIn: 5 * 60,
-            });
-            res.status(200).send({ user, authToken, refreshToken });
+            res.status(200).send({ user, ...generateTokens(tokenData) });
         } else {
             res.sendStatus(403);
         }
@@ -143,6 +148,22 @@ app.post("/signup", function (req, res, next) {
             res.sendStatus(403);
         }
     });
+});
+
+app.post("/refresh-token", function (req, res, next) {
+    try {
+        if (!req.body) return res.sendStatus(400);
+        const token = req.body.refreshToken;
+        const { id, username } = jwt.verify(token, "Secretkey123");
+        res.status(200).send({
+            id,
+            username,
+            ...generateTokens({ id, username }),
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(401).send(error);
+    }
 });
 
 app.get("/projects", authMiddleware, (req, res) => {
