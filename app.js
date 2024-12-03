@@ -3,6 +3,7 @@ const db = require("./databaseConnect");
 const app = express();
 const port = 3001;
 const jwt = require("jsonwebtoken");
+const authMiddleware = require("./authMiddleware");
 
 db.init();
 
@@ -144,7 +145,7 @@ app.post("/signup", function (req, res, next) {
     });
 });
 
-app.get("/projects", (req, res) => {
+app.get("/projects", authMiddleware, (req, res) => {
     const searchTerm = req.query.search;
     if (searchTerm) {
         db.getProjectBySearchTerm(searchTerm)
