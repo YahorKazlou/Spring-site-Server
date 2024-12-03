@@ -2,12 +2,14 @@ const express = require("express");
 const db = require("./databaseConnect");
 const app = express();
 const port = 3001;
+const jwt = require("jsonwebtoken");
 
 db.init();
 
 var hash = require("pbkdf2-password")();
 
 var cors = require("cors");
+const { json } = require("express");
 
 app.use(cors());
 
@@ -39,7 +41,10 @@ function authenticate(name, pass, fn) {
                 { password: pass, salt: user.salt },
                 function (err, pass, salt, hash) {
                     if (err) return fn(err);
-                    if (hash === user.password) return fn(null, user);
+                    if (hash === user.password) {
+                        const { password, salt, ...userData } = user;
+                        return fn(null, userData);
+                    }
                     fn(null, null);
                 }
             );
@@ -52,7 +57,17 @@ app.post("/login", function (req, res, next) {
     authenticate(req.body.login, req.body.password, function (err, user) {
         if (err) return next(err);
         if (user) {
-            res.sendStatus(200);
+            const tokenData = {
+                id: user.id,
+                username: user.username,
+            };
+            const refreshToken = jwt.sign(tokenData, "Secretkey123", {
+                expiresIn: "60d",
+            });
+            const authToken = jwt.sign(tokenData, "Secretkey123", {
+                expiresIn: 5 * 60,
+            });
+            res.status(200).send({ user, authToken, refreshToken });
         } else {
             res.sendStatus(403);
         }
