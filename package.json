@@ -14,7 +14,9 @@
         "cors": "^2.8.5",
         "eslint": "^9.14.0",
         "express": "^4.21.1",
-        "pbkdf2-password": "^1.2.1"
+        "jsonwebtoken": "^9.0.2",
+        "pbkdf2-password": "^1.2.1",
+        "pg": "^8.13.1"
     },
     "devDependencies": {
         "eslint-config-prettier": "^9.1.0",
