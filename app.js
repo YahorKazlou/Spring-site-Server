@@ -10,7 +10,6 @@ db.init();
 var hash = require("pbkdf2-password")();
 
 var cors = require("cors");
-const { json } = require("express");
 
 app.use(cors());
 
