@@ -114,7 +114,7 @@ function register(userData, fn) {
             error: "Last name must contain 3 symbols or more.",
             status: 400,
         });
-    if (!age || typeof age !== "number" || age === 0)
+    if (!age || typeof age !== "number" || age <= 0)
         return fn({
             field: "age",
             error: "Age must be a number and can't be zero",
