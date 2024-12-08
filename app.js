@@ -54,10 +54,10 @@ function authenticate(name, pass, fn) {
 
 const generateTokens = (tokenData) => {
     const refreshToken = jwt.sign(tokenData, "Secretkey123", {
-        expiresIn: '5m',
+        expiresIn: "5m",
     });
     const authToken = jwt.sign(tokenData, "Secretkey123", {
-        expiresIn: '2m',
+        expiresIn: "2m",
     });
 
     return { refreshToken, authToken };
