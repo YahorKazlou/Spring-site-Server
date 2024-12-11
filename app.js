@@ -10,7 +10,6 @@ db.init();
 var hash = require("pbkdf2-password")();
 
 var cors = require("cors");
-const { json } = require("express");
 
 app.use(cors());
 
@@ -55,10 +54,10 @@ function authenticate(name, pass, fn) {
 
 const generateTokens = (tokenData) => {
     const refreshToken = jwt.sign(tokenData, "Secretkey123", {
-        expiresIn: "60d",
+        expiresIn: "5m",
     });
     const authToken = jwt.sign(tokenData, "Secretkey123", {
-        expiresIn: 5 * 60,
+        expiresIn: "2m",
     });
 
     return { refreshToken, authToken };
@@ -114,7 +113,7 @@ function register(userData, fn) {
             error: "Last name must contain 3 symbols or more.",
             status: 400,
         });
-    if (!age || typeof age !== "number" || age === 0)
+    if (!age || typeof age !== "number" || age <= 0)
         return fn({
             field: "age",
             error: "Age must be a number and can't be zero",
