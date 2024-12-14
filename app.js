@@ -56,11 +56,11 @@ const generateTokens = (tokenData) => {
     const refreshToken = jwt.sign(tokenData, "Secretkey123", {
         expiresIn: "5m",
     });
-    const authToken = jwt.sign(tokenData, "Secretkey123", {
+    const accessToken = jwt.sign(tokenData, "Secretkey123", {
         expiresIn: "2m",
     });
 
-    return { refreshToken, authToken };
+    return { refreshToken, accessToken };
 };
 
 app.post("/login", function (req, res, next) {
