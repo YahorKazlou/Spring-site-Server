@@ -36,16 +36,13 @@ const setUser = (
     );
 };
 
-const getProjects = (callback) => {
-    return query("SELECT * FROM project", null, callback);
-};
-
-const getProjectBySearchTerm = (searchTerm, callback) => {
-    return query(
-        "SELECT * FROM project WHERE LOWER(name) LIKE LOWER($1) OR LOWER(text) LIKE LOWER ($1)",
-        [`%${searchTerm}%`],
-        callback
-    );
+const getProjects = (searchTerm, callback) => {
+    let queryRequest = "SELECT * FROM project";
+    if (searchTerm) {
+        queryRequest +=
+            " WHERE LOWER(name) LIKE LOWER($1) OR LOWER(text) LIKE LOWER ($1)";
+    }
+    return query(queryRequest, searchTerm ? [`%${searchTerm}%`] : [], callback);
 };
 
 module.exports = {
@@ -53,6 +50,5 @@ module.exports = {
     query,
     getUserByUsername,
     getProjects,
-    getProjectBySearchTerm,
     setUser,
 };

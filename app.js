@@ -167,19 +167,11 @@ app.post("/refresh-token", function (req, res, next) {
 
 app.get("/projects", authMiddleware, (req, res) => {
     const searchTerm = req.query.search;
-    if (searchTerm) {
-        db.getProjectBySearchTerm(searchTerm)
-            .then((dbres) => {
-                const projectsArray = dbres.rows;
-                res.json({ data: projectsArray });
-            })
-            .catch((error) => console.error(error));
-    } else {
-        db.getProjects()
-            .then((dbres) => {
-                const projectsArray = dbres.rows;
-                res.json({ data: projectsArray });
-            })
-            .catch((error) => console.error(error));
-    }
+
+    db.getProjects(searchTerm)
+        .then((dbres) => {
+            const projectsArray = dbres.rows;
+            res.json({ data: projectsArray });
+        })
+        .catch((error) => console.error(error));
 });
