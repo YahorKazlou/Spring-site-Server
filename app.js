@@ -28,15 +28,25 @@ app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
 
+function comparePassword(user, pass) {
+    hash({ password: pass, salt: user.salt }, function (err, pass, salt, hash) {
+        if (err) return fn(err);
+        if (hash === user.password) {
+            const { password, salt, ...userData } = user;
+            return fn(null, userData);
+        }
+        fn(null, null);
+    });
+}
+
 function authenticate(name, pass, fn) {
     // query the db for the given username
     db.getUserByUsername(name)
         .then((res) => {
             const user = res.rows[0];
             if (!user) return fn(null, null);
-            // apply the same algorithm to the POSTed password, applying
-            // the hash against the pass / salt, if there is a match we
-            // found the user
+
+            // if this username exist
             hash(
                 { password: pass, salt: user.salt },
                 function (err, pass, salt, hash) {
