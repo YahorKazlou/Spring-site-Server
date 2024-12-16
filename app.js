@@ -10,7 +10,6 @@ db.init();
 var hash = require("pbkdf2-password")();
 
 var cors = require("cors");
-const { json } = require("express");
 
 app.use(cors());
 
@@ -29,15 +28,25 @@ app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
 
+function comparePassword(user, pass) {
+    hash({ password: pass, salt: user.salt }, function (err, pass, salt, hash) {
+        if (err) return fn(err);
+        if (hash === user.password) {
+            const { password, salt, ...userData } = user;
+            return fn(null, userData);
+        }
+        fn(null, null);
+    });
+}
+
 function authenticate(name, pass, fn) {
     // query the db for the given username
     db.getUserByUsername(name)
         .then((res) => {
             const user = res.rows[0];
             if (!user) return fn(null, null);
-            // apply the same algorithm to the POSTed password, applying
-            // the hash against the pass / salt, if there is a match we
-            // found the user
+
+            // if this username exist
             hash(
                 { password: pass, salt: user.salt },
                 function (err, pass, salt, hash) {
@@ -55,13 +64,13 @@ function authenticate(name, pass, fn) {
 
 const generateTokens = (tokenData) => {
     const refreshToken = jwt.sign(tokenData, "Secretkey123", {
-        expiresIn: "60d",
+        expiresIn: "5m",
     });
-    const authToken = jwt.sign(tokenData, "Secretkey123", {
-        expiresIn: 5 * 60,
+    const accessToken = jwt.sign(tokenData, "Secretkey123", {
+        expiresIn: "2m",
     });
 
-    return { refreshToken, authToken };
+    return { refreshToken, accessToken };
 };
 
 app.post("/login", function (req, res, next) {
@@ -114,7 +123,7 @@ function register(userData, fn) {
             error: "Last name must contain 3 symbols or more.",
             status: 400,
         });
-    if (!age || typeof age !== "number" || age === 0)
+    if (!age || typeof age !== "number" || age <= 0)
         return fn({
             field: "age",
             error: "Age must be a number and can't be zero",
@@ -168,19 +177,11 @@ app.post("/refresh-token", function (req, res, next) {
 
 app.get("/projects", authMiddleware, (req, res) => {
     const searchTerm = req.query.search;
-    if (searchTerm) {
-        db.getProjectBySearchTerm(searchTerm)
-            .then((dbres) => {
-                const projectsArray = dbres.rows;
-                res.json({ data: projectsArray });
-            })
-            .catch((error) => console.error(error));
-    } else {
-        db.getProjects()
-            .then((dbres) => {
-                const projectsArray = dbres.rows;
-                res.json({ data: projectsArray });
-            })
-            .catch((error) => console.error(error));
-    }
+
+    db.getProjects(searchTerm)
+        .then((dbres) => {
+            const projectsArray = dbres.rows;
+            res.json({ data: projectsArray });
+        })
+        .catch((error) => console.error(error));
 });
