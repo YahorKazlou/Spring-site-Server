@@ -1,6 +1,11 @@
 const express = require("express");
+const db = require("./databaseConnect");
 const app = express();
 const port = 3001;
+const jwt = require("jsonwebtoken");
+const authMiddleware = require("./authMiddleware");
+
+db.init();
 
 var hash = require("pbkdf2-password")();
 
@@ -11,107 +16,172 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 // This is required to handle urlencoded data
 app.use(express.json());
-// This to handle json data coming from requests mainly post
 
-var users = {
-    admin: { name: "admin" },
-};
+app.use(express.static("public"));
+
+// This to handle json data coming from requests mainly post
 
 // when you create a user, generate a salt
 // and hash the password ('foobar' is the pass here)
 
-hash({ password: "1234" }, function (err, pass, salt, hash) {
-    if (err) throw err;
-    // store the salt & hash in the "db"
-    users.admin.salt = salt;
-    users.admin.hash = hash;
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`);
 });
 
-function authenticate(name, pass, fn) {
-    if (!module.parent) console.log("authenticating %s:%s", name, pass);
-    var user = users[name];
-    // query the db for the given username
-    if (!user) return fn(null, null);
-    // apply the same algorithm to the POSTed password, applying
-    // the hash against the pass / salt, if there is a match we
-    // found the user
+function comparePassword(user, pass) {
     hash({ password: pass, salt: user.salt }, function (err, pass, salt, hash) {
         if (err) return fn(err);
-        if (hash === user.hash) return fn(null, user);
+        if (hash === user.password) {
+            const { password, salt, ...userData } = user;
+            return fn(null, userData);
+        }
         fn(null, null);
     });
 }
+
+function authenticate(name, pass, fn) {
+    // query the db for the given username
+    db.getUserByUsername(name)
+        .then((res) => {
+            const user = res.rows[0];
+            if (!user) return fn(null, null);
+
+            // if this username exist
+            hash(
+                { password: pass, salt: user.salt },
+                function (err, pass, salt, hash) {
+                    if (err) return fn(err);
+                    if (hash === user.password) {
+                        const { password, salt, ...userData } = user;
+                        return fn(null, userData);
+                    }
+                    fn(null, null);
+                }
+            );
+        })
+        .catch((error) => console.log(error));
+}
+
+const generateTokens = (tokenData) => {
+    const refreshToken = jwt.sign(tokenData, "Secretkey123", {
+        expiresIn: "5m",
+    });
+    const accessToken = jwt.sign(tokenData, "Secretkey123", {
+        expiresIn: "2m",
+    });
+
+    return { refreshToken, accessToken };
+};
 
 app.post("/login", function (req, res, next) {
     if (!req.body) return res.sendStatus(400);
     authenticate(req.body.login, req.body.password, function (err, user) {
         if (err) return next(err);
         if (user) {
-            res.sendStatus(200);
+            const tokenData = {
+                id: user.id,
+                username: user.username,
+            };
+            res.status(200).send({ user, ...generateTokens(tokenData) });
         } else {
             res.sendStatus(403);
         }
     });
 });
 
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
+function register(userData, fn) {
+    const { username, password, repeatPassword, firstName, lastName, age } =
+        userData;
+    // TODO validation
+    if (!username || username.length < 3)
+        return fn({
+            field: "username",
+            error: "Username must contain 3 symbols or more",
+            status: 400,
+        });
+    if (!password || password.length < 4 || /[^a-zA-Z0-9]/g.test(password))
+        return fn({
+            field: "password",
+            error: "Password must contain at least 1 number and 1 letter and be at least 4 symbols or more.",
+            status: 400,
+        });
+    if (!repeatPassword || password !== repeatPassword)
+        return fn({
+            field: "repeatPassword",
+            error: "Repeat password section validation (passwords should be the same)",
+            status: 400,
+        });
+    if (!firstName || firstName.length < 3)
+        return fn({
+            field: "firstName",
+            error: "First name must contain 3 symbols or more.",
+            status: 400,
+        });
+    if (!lastName || lastName.length < 3)
+        return fn({
+            field: "lastName",
+            error: "Last name must contain 3 symbols or more.",
+            status: 400,
+        });
+    if (!age || typeof age !== "number" || age <= 0)
+        return fn({
+            field: "age",
+            error: "Age must be a number and can't be zero",
+            status: 400,
+        });
+
+    hash({ password }, function (err, pass, salt, hash) {
+        if (err) return fn(err);
+
+        db.setUser({ ...userData, password: hash, salt })
+            .then(() => {
+                const { password, ...visibleUserData } = userData;
+                return fn(null, visibleUserData);
+            })
+            .catch((error) => {
+                return fn(error);
+            });
+    });
+}
+
+app.post("/signup", function (req, res, next) {
+    if (!req.body) return res.sendStatus(400);
+    register(req.body, function (err, user) {
+        if (err) {
+            console.log(err);
+            res.status(400).send(err);
+        }
+        if (user) {
+            res.json({ data: user });
+        } else {
+            res.sendStatus(403);
+        }
+    });
 });
 
-const defaultProjects = [
-    {
-        name: "Spring Boot",
-        text: "Takes an opinionated view of building Spring applications and gets you up and running as quickly as possible.",
-        imgUrl: "http://localhost:3001/spring-boot.svg",
-        link: "",
-    },
-    {
-        name: "Spring Framework",
-        text: "Provides core support for dependency injection, transaction management, web apps, data access, messaging, and more.",
-        imgUrl: "http://localhost:3001/spring-framework.svg",
-        link: "",
-    },
-    {
-        name: "Spring Data",
-        text: "Provides a consistent approach to data access – relational, non-relational, map-reduce, and beyond.",
-        imgUrl: "http://localhost:3001/spring-data.svg",
-        link: "",
-    },
-    {
-        name: "Spring Cloud",
-        text: "Provides a set of tools for common patterns in distributed systems. Useful for building and deploying microservices.",
-        imgUrl: "http://localhost:3001/spring-cloud.svg",
-        link: "",
-    },
-    {
-        name: "Spring Cloud Data Flow",
-        text: "Provides an orchestration service for composable data microservice applications on modern runtimes.",
-        imgUrl: "http://localhost:3001/spring-data-flow.svg",
-        link: "",
-    },
-    {
-        name: "Spring Scurity",
-        text: "Protects your application with comprehensive and extensible authentication and authorization support.",
-        imgUrl: "http://localhost:3001/spring-security.svg",
-        link: "",
-    },
-];
+app.post("/refresh-token", function (req, res, next) {
+    try {
+        if (!req.body) return res.sendStatus(400);
+        const token = req.body.refreshToken;
+        const { id, username } = jwt.verify(token, "Secretkey123");
+        res.status(200).send({
+            id,
+            username,
+            ...generateTokens({ id, username }),
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(401).send(error);
+    }
+});
 
-app.use(express.static("public"));
-
-const filterProjects = (searchTerm = "") => {
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const filteredProjects = defaultProjects.filter(
-        (project) =>
-            project.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-            project.text.toLowerCase().includes(lowerCaseSearchTerm)
-    );
-
-    return filteredProjects;
-};
-
-app.get("/projects", (req, res) => {
+app.get("/projects", authMiddleware, (req, res) => {
     const searchTerm = req.query.search;
 
-    res.json({ data: filterProjects(searchTerm) });
+    db.getProjects(searchTerm)
+        .then((dbres) => {
+            const projectsArray = dbres.rows;
+            res.json({ data: projectsArray });
+        })
+        .catch((error) => console.error(error));
 });
